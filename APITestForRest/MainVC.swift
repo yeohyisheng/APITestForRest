@@ -138,6 +138,9 @@ class MainVC: UIViewController {
             }
             
             self.getTownName()
+            DispatchQueue.main.async {
+                self.listTableView.reloadData()
+            }
         } failure: { errorMessage in
             print(errorMessage)
         }
