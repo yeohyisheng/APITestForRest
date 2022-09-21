@@ -7,7 +7,6 @@
 
 import UIKit
 import RealmSwift
-import SwiftUI
 import Kanna
 
 class MainVC: UIViewController {
@@ -33,7 +32,7 @@ class MainVC: UIViewController {
     var maskInfoDBChildMaskNumberArray: [String] = []
     var townListForPickerView: [String] = []
     var cacheTown: String = ""
-    var selectedTown: String = ""
+    var selectedTown: String = "豐原區"
     var tableViewCellPrimaryKey:ObjectId = ObjectId.generate()
     var cellIndexPath: Int = 0 //取得某行列的cell
     var preIndexPath: Int = 0 //刪除行列前的資料數量
@@ -69,11 +68,6 @@ class MainVC: UIViewController {
     // 處理拿到的API資料 篩出台中市的以後放入maskInfo:[MaskInfo]並存入realm資料庫中
     func fetchMaskInfo(){
         NetworkManager.shared.getPharmaciesData { (response: Pharmacies?) in
-            DispatchQueue.main.async {
-                self.view.isUserInteractionEnabled = false
-                self.view.addSubview(self.indicatorView)
-                self.apiActivityIndicator.startAnimating()
-            }
             guard let featureCount = response?.features.count else { return }
             let realm = try! Realm()
             let result = realm.objects(MaskInfoDB.self)
@@ -144,17 +138,9 @@ class MainVC: UIViewController {
             }
             
             self.getTownName()
-            DispatchQueue.main.async {
-                self.view.isUserInteractionEnabled = true
-                self.indicatorView.removeFromSuperview()
-                self.apiActivityIndicator.stopAnimating()
-            }
         } failure: { errorMessage in
             print(errorMessage)
         }
-        
-        
-
         
     }
     
@@ -317,9 +303,17 @@ extension MainVC: UITableViewDelegate, UITableViewDataSource {
         
         let realm = try! Realm()
         let result = realm.objects(MaskInfoDB.self)
-        preIndexPath = result.count
-        return preIndexPath
-        
+        if result.count > 0 {
+            if !isSelectTownMode{
+                preIndexPath = result.count
+                return result.count
+            }
+            else {
+               let results = realm.objects(MaskInfoDB.self).filter("town == %@", selectedTown)
+               return results.count
+           }
+        }
+        return 0
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -328,16 +322,26 @@ extension MainVC: UITableViewDelegate, UITableViewDataSource {
         let result = realm.objects(MaskInfoDB.self)
         
         if result.count > 0 {
-            for element in result {
-                maskInfoDBNameArray.append("\(element.name)")
-                maskInfoDBTownArray.append("\(element.town)")
-                maskInfoDBAdultMaskNumberArray.append("\(element.mask_adult)")
-                maskInfoDBChildMaskNumberArray.append("\(element.mask_child)")
+            if !isSelectTownMode{
+                for element in result {
+                    maskInfoDBNameArray.append("\(element.name)")
+                    maskInfoDBTownArray.append("\(element.town)")
+                    maskInfoDBAdultMaskNumberArray.append("\(element.mask_adult)")
+                    maskInfoDBChildMaskNumberArray.append("\(element.mask_child)")
+                }
+                cell.nameLabel.text = "藥局: " + maskInfoDBNameArray[indexPath.row]
+                cell.townLabel.text = "地區: " + maskInfoDBTownArray[indexPath.row]
+                cell.adultMaskLabel.text = "成人口罩: " + maskInfoDBAdultMaskNumberArray[indexPath.row]
+                cell.childMaskLabel.text = "小孩口罩: " + maskInfoDBChildMaskNumberArray[indexPath.row]
+                return cell
+            } else {
+                cell.nameLabel.text = "藥局: " + maskInfoDBNameArray[indexPath.row]
+                cell.townLabel.text = "地區: " + maskInfoDBTownArray[indexPath.row]
+                cell.adultMaskLabel.text = "成人口罩: " + maskInfoDBAdultMaskNumberArray[indexPath.row]
+                cell.childMaskLabel.text = "小孩口罩: " + maskInfoDBChildMaskNumberArray[indexPath.row]
+                return cell
             }
-            cell.nameLabel.text = "藥局: " + maskInfoDBNameArray[indexPath.row]
-            cell.townLabel.text = "地區: " + maskInfoDBTownArray[indexPath.row]
-            cell.adultMaskLabel.text = "成人口罩: " + maskInfoDBAdultMaskNumberArray[indexPath.row]
-            cell.childMaskLabel.text = "小孩口罩: " + maskInfoDBChildMaskNumberArray[indexPath.row]
+            
         }
         return cell
     }
