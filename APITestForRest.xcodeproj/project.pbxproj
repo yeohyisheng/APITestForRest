@@ -220,7 +220,6 @@
 			children = (
 				236E9A0928D20BD700C5AD5B /* MaskApi.swift */,
 				23A1AAE428D37468006AC233 /* MaskInfo.swift */,
-				236E9A0F28D3668000C5AD5B /* NetworkManager.swift */,
 				23A1AAE628D37B84006AC233 /* LocalDatabase.swift */,
 			);
 			path = Model;
@@ -229,6 +228,7 @@
 		236E9A0E28D3665300C5AD5B /* Network */ = {
 			isa = PBXGroup;
 			children = (
+				236E9A0F28D3668000C5AD5B /* NetworkManager.swift */,
 				236E9A1128D3668F00C5AD5B /* NetworkConstants.swift */,
 			);
 			path = Network;

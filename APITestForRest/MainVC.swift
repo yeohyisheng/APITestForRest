@@ -68,6 +68,11 @@ class MainVC: UIViewController {
     // 處理拿到的API資料 篩出台中市的以後放入maskInfo:[MaskInfo]並存入realm資料庫中
     func fetchMaskInfo(){
         NetworkManager.shared.getPharmaciesData { (response: Pharmacies?) in
+            DispatchQueue.main.async {
+                self.view.isUserInteractionEnabled = false
+                self.view.addSubview(self.indicatorView)
+                self.apiActivityIndicator.startAnimating()
+            }
             guard let featureCount = response?.features.count else { return }
             let realm = try! Realm()
             let result = realm.objects(MaskInfoDB.self)
@@ -140,6 +145,10 @@ class MainVC: UIViewController {
             self.getTownName()
             DispatchQueue.main.async {
                 self.listTableView.reloadData()
+                self.apiActivityIndicator.stopAnimating()
+                self.indicatorView.removeFromSuperview()
+                self.view.isUserInteractionEnabled = true
+                
             }
         } failure: { errorMessage in
             print(errorMessage)
