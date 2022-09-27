@@ -7,7 +7,7 @@
 
 import Foundation
 import CoreData
-
+//MARK: 初始化CoreData的一些必要參數 
 class CoreDataManager {
     
     static let shared = CoreDataManager(modelName: "Model")

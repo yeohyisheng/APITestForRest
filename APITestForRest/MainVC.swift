@@ -15,7 +15,7 @@ class MainVC: UIViewController {
     @IBOutlet weak var townPickerView: UIPickerView!
     @IBOutlet weak var indicatorView: UIView!
     @IBOutlet weak var apiActivityIndicator: UIActivityIndicatorView!
-    @IBOutlet weak var townBtn: UIButton!
+    @IBOutlet weak var townLabel: UILabel!
     @IBOutlet weak var sentenceLabel: UILabel!
     @IBOutlet weak var authorLabel: UILabel!
     @IBOutlet weak var spacing: NSLayoutConstraint!
@@ -26,10 +26,6 @@ class MainVC: UIViewController {
     var cancelBtn = UIButton()
     var maskInfo: [MaskInfo] = [] //Pickerview篩選地區前暫存的array
     var townList: [Pharmacies.Feature.Properties] = [] //pickerview使用的資料
-    var maskInfoDBNameArray: [String] = []
-    var maskInfoDBTownArray: [String] = []
-    var maskInfoDBAdultMaskNumberArray: [String] = []
-    var maskInfoDBChildMaskNumberArray: [String] = []
     var townListForPickerView: [String] = []
     var cacheTown: String = ""
     var selectedTown: String = "豐原區"
@@ -41,7 +37,7 @@ class MainVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setNavigationBar()
+        setupUI()
         setupFetchResultController()
         fetchMaskInfo()
         delegate()
@@ -49,16 +45,57 @@ class MainVC: UIViewController {
         print(fetchResultController.fetchedObjects?.count)
     }
     
-    //點擊townBtn彈出pickerview及toolbar生成
-    @IBAction func selectTown(_ sender: Any) {
-        toolBar.removeFromSuperview()
-        UIView.animate(withDuration: 0.5) {
-            self.spacing.constant = -216
-            self.displayToolBar()
-        }
-        print("Im tapping")
+    //設置UI屬性
+    func setupUI(){
+        setupViewController()
+        setNavigationBar()
+        setupLeftNavigationBarButtonItem()
+        setupRightNavigationBarButtonItem()
+        setupTableView()
+        setupLabel()
+    }
+    //設置viewController屬性
+    func setupViewController(){
+        self.view.backgroundColor = .darkGray
     }
     
+    ////設置navigationBarLeftItem屬性
+    func setupLeftNavigationBarButtonItem(){
+        let reloadItem = UIBarButtonItem(image: UIImage(systemName: "arrow.counterclockwise"),
+                                         style: .plain,
+                                         target: self,
+                                         action: #selector(fetchDataFromDatabase))
+        self.navigationItem.leftBarButtonItem = reloadItem
+    }
+    
+    ////設置navigationBarRightItem屬性
+    func setupRightNavigationBarButtonItem(){
+        let searchItem = UIBarButtonItem(image: UIImage(systemName: "magnifyingglass"),
+                                         style: .plain,
+                                         target: self,
+                                         action: #selector(popUpPickerView))
+        self.navigationItem.rightBarButtonItem = searchItem
+    }
+    //設置navigationBar屬性
+    func setNavigationBar(){
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .darkGray
+        self.navigationController?.navigationBar.tintColor = #colorLiteral(red: 0.9953911901, green: 0.9881951213, blue: 1, alpha: 1)
+        appearance.titleTextAttributes = [NSAttributedString.Key.foregroundColor : #colorLiteral(red: 0.9953911901, green: 0.9881951213, blue: 1, alpha: 1)]
+        self.navigationController?.navigationBar.standardAppearance = appearance
+        self.navigationController?.navigationBar.scrollEdgeAppearance = self.navigationController?.navigationBar.standardAppearance
+        self.title = "臺中市"
+    }
+    //設置tableView屬性
+    func setupTableView(){
+        listTableView.backgroundColor = .darkGray
+        listTableView.separatorStyle = .none
+    }
+    //設置townLabel屬性
+    func setupLabel(){
+        townLabel.backgroundColor = .black
+    }
     //delegate datasource
     func delegate(){
         listTableView.delegate = self
@@ -67,7 +104,7 @@ class MainVC: UIViewController {
         townPickerView.dataSource = self
         listTableView.register(UINib(nibName: "CustomTVC", bundle: nil), forCellReuseIdentifier: CustomTVC.cellIdentifier)
     }
-    
+    //設置fetchResultController
     func setupFetchResultController() {
         fetchResultController = CoreDataManager.shared.createMaskInfoTableFetchResultController(sorter: "town")
         fetchResultController.delegate = self
@@ -78,15 +115,34 @@ class MainVC: UIViewController {
             print("error: \(error)")
         }
     }
-    func delete(item: MaskInfoTable){
-        context.delete(item)
+    //彈出pickerView與toolbar
+    @objc func popUpPickerView(){
+        toolBar.removeFromSuperview()
+        UIView.animate(withDuration: 0.5) {
+            self.spacing.constant = -216
+            self.displayToolBar()
+            self.listTableView.isUserInteractionEnabled = false
+        }
+        print("Im tapping")
+    }
+    
+    //刷新資料到全區域
+    @objc func fetchDataFromDatabase(){
+        fetchResultController.fetchRequest.predicate = nil
         do {
-            try context.save()
+            try fetchResultController.performFetch()
         }
         catch {
             print("error: \(error)")
         }
+        DispatchQueue.main.async {
+            self.townLabel.text = "全區域"
+            self.townPickerView.selectRow(0, inComponent: 0, animated: false)
+            self.selectedTown = "豐原區"
+            self.listTableView.reloadData()
+        }
     }
+    
     // 處理拿到的API資料 篩出台中市的以後放入maskInfo:[MaskInfo]並存入realm資料庫中
     func fetchMaskInfo(){
         NetworkManager.shared.getPharmaciesData { (response: Pharmacies?) in
@@ -232,29 +288,18 @@ class MainVC: UIViewController {
     //取得maskAPI提供的id作為primaryKey
     func getCellPrimaryKey() {
         let frc = fetchResultController.fetchedObjects?[self.cellIndexPath]
-            print("cellIndexPath in Getcell primary key: \(cellIndexPath)")
-            if !fetchResultController.fetchedObjects!.isEmpty {
-                tableViewCellPrimaryKey = (frc?.id)!
-            }
-            print(tableViewCellPrimaryKey)
+        print("cellIndexPath in Getcell primary key: \(cellIndexPath)")
+        if !fetchResultController.fetchedObjects!.isEmpty {
+            tableViewCellPrimaryKey = (frc?.id)!
+        }
+        print(tableViewCellPrimaryKey)
     }
     
-    //設置navigationBar
-    func setNavigationBar(){
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = #colorLiteral(red: 0.2196078449, green: 0.007843137719, blue: 0.8549019694, alpha: 1)
-        self.navigationController?.navigationBar.tintColor = #colorLiteral(red: 0.9953911901, green: 0.9881951213, blue: 1, alpha: 1)
-        appearance.titleTextAttributes = [NSAttributedString.Key.foregroundColor : #colorLiteral(red: 0.9953911901, green: 0.9881951213, blue: 1, alpha: 1)]
-        self.navigationController?.navigationBar.standardAppearance = appearance
-        self.navigationController?.navigationBar.scrollEdgeAppearance = self.navigationController?.navigationBar.standardAppearance
-        self.title = "臺中市"
-    }
     //生成toolbar
     func displayToolBar() {
         toolBar = UIToolbar.init(frame: CGRect.init(x: 0.0, y: UIScreen.main.bounds.size.height - 216 - getNavigationBarHight(), width: UIScreen.main.bounds.size.width, height: 50))
         toolBar.barStyle = .default
-        toolBar.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        toolBar.backgroundColor = .black
         cancelBtn = UIButton(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
         cancelBtn.setTitle(NSLocalizedString("Cancel", comment: ""), for: .normal)
         cancelBtn.setTitleColor(UIColor.black, for: .normal)
@@ -270,14 +315,14 @@ class MainVC: UIViewController {
         submitBtn.translatesAutoresizingMaskIntoConstraints = false
         cancelBtn.translatesAutoresizingMaskIntoConstraints = false
         let constraints1 = [cancelBtn.topAnchor.constraint(equalTo: self.toolBar.topAnchor, constant: 0),
-                           cancelBtn.widthAnchor.constraint(equalToConstant: 50),
-                           cancelBtn.leftAnchor.constraint(equalTo: self.toolBar.leftAnchor, constant: UIScreen.main.bounds.size.width/30),
-                           cancelBtn.bottomAnchor.constraint(equalTo: self.toolBar.bottomAnchor, constant: 0)]
+                            cancelBtn.widthAnchor.constraint(equalToConstant: 50),
+                            cancelBtn.leftAnchor.constraint(equalTo: self.toolBar.leftAnchor, constant: UIScreen.main.bounds.size.width/30),
+                            cancelBtn.bottomAnchor.constraint(equalTo: self.toolBar.bottomAnchor, constant: 0)]
         NSLayoutConstraint.activate(constraints1)
         let constraints3 = [submitBtn.topAnchor.constraint(equalTo: self.toolBar.topAnchor, constant: 0),
-                           submitBtn.widthAnchor.constraint(equalToConstant: 50),
-                           submitBtn.trailingAnchor.constraint(equalTo: self.toolBar.trailingAnchor, constant: -UIScreen.main.bounds.size.width/30),
-                           submitBtn.bottomAnchor.constraint(equalTo: self.toolBar.bottomAnchor, constant: 0)]
+                            submitBtn.widthAnchor.constraint(equalToConstant: 50),
+                            submitBtn.trailingAnchor.constraint(equalTo: self.toolBar.trailingAnchor, constant: -UIScreen.main.bounds.size.width/30),
+                            submitBtn.bottomAnchor.constraint(equalTo: self.toolBar.bottomAnchor, constant: 0)]
         NSLayoutConstraint.activate(constraints3)
         let titleLab = UILabel()
         titleLab.text = NSLocalizedString("Select Town", comment: "")
@@ -293,6 +338,10 @@ class MainVC: UIViewController {
     @objc func removePickView() {
         toolBar.removeFromSuperview()
         spacing.constant = 0
+        listTableView.isUserInteractionEnabled = true
+        
+        townPickerView.selectRow(0, inComponent: 0, animated: false)
+        selectedTown = "豐原區"
     }
     
     //當toolbar按下complete 將篩選成指定區域的資料並更新tableview顯示
@@ -305,22 +354,36 @@ class MainVC: UIViewController {
         catch {
             print("error: \(error)")
         }
+        let fetchResultCount = fetchResultController.fetchedObjects!.count
+        if fetchResultCount <= 0 {
+            let alert = UIAlertController(title: "此區域資料已完全刪除或不存在",
+                                          message: "即將返回全區域",
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "確定",
+                                          style: .default,
+                                          handler: { _ in
+                self.fetchDataFromDatabase()
+            }))
+            self.present(alert, animated: true, completion: nil)
+        }
+        
         DispatchQueue.main.async {
-            self.townBtn.setTitle(self.selectedTown, for: .normal)
+            self.townLabel.text = self.selectedTown
             self.listTableView.reloadData()
+            self.listTableView.isUserInteractionEnabled = true
             self.removePickView()
         }
     }
-
+    
 }
-
+//MARK: UITableViewDelegate, DataSource
 extension MainVC: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         let maskInfoData = fetchResultController.sections![section]
         preIndexPath = maskInfoData.numberOfObjects
-            return maskInfoData.numberOfObjects
+        return maskInfoData.numberOfObjects
     }
-
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: CustomTVC.cellIdentifier, for: indexPath) as! CustomTVC
         let maskInfoData = fetchResultController.object(at: indexPath)
@@ -341,16 +404,28 @@ extension MainVC: UITableViewDelegate, UITableViewDataSource {
         alert.addAction(UIAlertAction(title: "刪除", style: .destructive, handler: { _ in
             let maskInfoData = self.fetchResultController.object(at: indexPath)
             print(self.fetchResultController.fetchRequest.predicate)
-                            self.cellIndexPath = indexPath.row
-                            self.getCellPrimaryKey()
+            self.cellIndexPath = indexPath.row
+            self.getCellPrimaryKey()
             print("cell indexpath in editingStyle : %@",self.cellIndexPath)
-        print(maskInfoData)
-        print("get mask info data cell id : \(maskInfoData.id)")
+            print(maskInfoData)
+            print("get mask info data cell id : \(maskInfoData.id)")
             print("get tableview Cell PrimaryKey : \(self.tableViewCellPrimaryKey)")
             if maskInfoData.id == self.tableViewCellPrimaryKey {
-            CoreDataManager.shared.deleteData(maskInfoTable: maskInfoData)
-        }
+                CoreDataManager.shared.deleteData(maskInfoTable: maskInfoData)
+            }
             print("上次表格的行數： \(self.preIndexPath)  當前表格行數： \(self.fetchResultController.fetchedObjects?.count)")
+            let fetchCount = self.fetchResultController.fetchedObjects!.count
+            if fetchCount <= 0{
+                let alert = UIAlertController(title: "此區域資料已完全刪除或不存在",
+                                              message: "即將返回全區域",
+                                              preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "確定",
+                                              style: .default,
+                                              handler: { _ in
+                    self.fetchDataFromDatabase()
+                }))
+                self.present(alert, animated: true, completion: nil)
+            }
         }))
         alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { _ in
             return
@@ -358,7 +433,7 @@ extension MainVC: UITableViewDelegate, UITableViewDataSource {
         self.present(alert, animated: true, completion: nil)
     }
 }
-
+//MARK: UIPickerViewDelagate, Datasource
 extension MainVC: UIPickerViewDelegate, UIPickerViewDataSource {
     
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
@@ -370,9 +445,9 @@ extension MainVC: UIPickerViewDelegate, UIPickerViewDataSource {
     }
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-
+        
         return townListForPickerView[row]
-
+        
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
@@ -382,7 +457,7 @@ extension MainVC: UIPickerViewDelegate, UIPickerViewDataSource {
         }
     }
 }
-
+//MARK: fetchResultControllerDelegate
 extension MainVC: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         listTableView.beginUpdates()

@@ -19,6 +19,14 @@ class CustomTVC: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code
+        nameLabel.textColor = .white
+        townLabel.textColor = .white
+        adultMaskLabel.textColor = .white
+        childMaskLabel.textColor = .white
+        self.backgroundColor = .clear
+        let bgColorView = UIView()
+        bgColorView.backgroundColor = .gray
+        self.selectedBackgroundView = bgColorView
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {

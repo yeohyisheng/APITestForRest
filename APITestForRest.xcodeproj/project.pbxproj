@@ -22,7 +22,6 @@
 		238569A228DA594400BB10A4 /* APITestForRestSlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 238569A128DA594400BB10A4 /* APITestForRestSlowTests.swift */; };
 		238569AF28DA613C00BB10A4 /* APITestForRestFakeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 238569AE28DA613C00BB10A4 /* APITestForRestFakeTests.swift */; };
 		23A1AAE528D37468006AC233 /* MaskInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A1AAE428D37468006AC233 /* MaskInfo.swift */; };
-		23A1AAE728D37B84006AC233 /* LocalDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A1AAE628D37B84006AC233 /* LocalDatabase.swift */; };
 		23A1AAEA28D65DC7006AC233 /* MainVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A1AAE828D65DC6006AC233 /* MainVC.swift */; };
 		23A1AAEB28D65DC7006AC233 /* MainVC.xib in Resources */ = {isa = PBXBuildFile; fileRef = 23A1AAE928D65DC7006AC233 /* MainVC.xib */; };
 		23AFDA1228E1029A0048806F /* Model.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 23AFDA1028E1029A0048806F /* Model.xcdatamodeld */; };
@@ -90,7 +89,6 @@
 		238569AC28DA613C00BB10A4 /* APITestForRestFakeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = APITestForRestFakeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		238569AE28DA613C00BB10A4 /* APITestForRestFakeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITestForRestFakeTests.swift; sourceTree = "<group>"; };
 		23A1AAE428D37468006AC233 /* MaskInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaskInfo.swift; sourceTree = "<group>"; };
-		23A1AAE628D37B84006AC233 /* LocalDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDatabase.swift; sourceTree = "<group>"; };
 		23A1AAE828D65DC6006AC233 /* MainVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainVC.swift; sourceTree = "<group>"; };
 		23A1AAE928D65DC7006AC233 /* MainVC.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainVC.xib; sourceTree = "<group>"; };
 		23AFDA1128E1029A0048806F /* Model.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Model.xcdatamodel; sourceTree = "<group>"; };
@@ -228,11 +226,10 @@
 			children = (
 				23AFDA1D28E108620048806F /* MaskInfoTable+CoreDataClass.swift */,
 				23AFDA1E28E108620048806F /* MaskInfoTable+CoreDataProperties.swift */,
+				23AFDA2128E1B5360048806F /* CoreDataManager.swift */,
 				236E9A0928D20BD700C5AD5B /* MaskApi.swift */,
 				23A1AAE428D37468006AC233 /* MaskInfo.swift */,
-				23A1AAE628D37B84006AC233 /* LocalDatabase.swift */,
 				23AFDA1028E1029A0048806F /* Model.xcdatamodeld */,
-				23AFDA2128E1B5360048806F /* CoreDataManager.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -594,7 +591,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				23A1AAE728D37B84006AC233 /* LocalDatabase.swift in Sources */,
 				23A1AAEA28D65DC7006AC233 /* MainVC.swift in Sources */,
 				2385697028D8C80500BB10A4 /* CustomTVC.swift in Sources */,
 				236E9A1228D3668F00C5AD5B /* NetworkConstants.swift in Sources */,

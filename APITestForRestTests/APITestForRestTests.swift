@@ -17,7 +17,6 @@ class APITestForRestTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        sut = nil
     }
 
     func testExample() throws {
