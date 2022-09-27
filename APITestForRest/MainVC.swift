@@ -6,8 +6,8 @@
 //
 
 import UIKit
-import RealmSwift
 import Kanna
+import CoreData
 
 class MainVC: UIViewController {
     
@@ -33,17 +33,20 @@ class MainVC: UIViewController {
     var townListForPickerView: [String] = []
     var cacheTown: String = ""
     var selectedTown: String = "豐原區"
-    var tableViewCellPrimaryKey:ObjectId = ObjectId.generate()
+    var tableViewCellPrimaryKey: String = ""
     var cellIndexPath: Int = 0 //取得某行列的cell
     var preIndexPath: Int = 0 //刪除行列前的資料數量
-    var isSelectTownMode: Bool = false //是否為pickerview選擇模式
+    var fetchResultController: NSFetchedResultsController<MaskInfoTable>!
+    let context = CoreDataManager.shared.context
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setNavigationBar()
+        setupFetchResultController()
         fetchMaskInfo()
         delegate()
         parseHTML()
+        print(fetchResultController.fetchedObjects?.count)
     }
     
     //點擊townBtn彈出pickerview及toolbar生成
@@ -65,6 +68,25 @@ class MainVC: UIViewController {
         listTableView.register(UINib(nibName: "CustomTVC", bundle: nil), forCellReuseIdentifier: CustomTVC.cellIdentifier)
     }
     
+    func setupFetchResultController() {
+        fetchResultController = CoreDataManager.shared.createMaskInfoTableFetchResultController(sorter: "town")
+        fetchResultController.delegate = self
+        do {
+            try fetchResultController.performFetch()
+        }
+        catch {
+            print("error: \(error)")
+        }
+    }
+    func delete(item: MaskInfoTable){
+        context.delete(item)
+        do {
+            try context.save()
+        }
+        catch {
+            print("error: \(error)")
+        }
+    }
     // 處理拿到的API資料 篩出台中市的以後放入maskInfo:[MaskInfo]並存入realm資料庫中
     func fetchMaskInfo(){
         NetworkManager.shared.getPharmaciesData { (response: Pharmacies?) in
@@ -74,11 +96,10 @@ class MainVC: UIViewController {
                 self.apiActivityIndicator.startAnimating()
             }
             guard let featureCount = response?.features.count else { return }
-            let realm = try! Realm()
-            let result = realm.objects(MaskInfoDB.self)
             //如果資料庫有資料
-            if result.count > 0 {
+            if self.fetchResultController.fetchedObjects?.count ?? 0 > 0 {
                 for i in 0 ..< featureCount {
+                    guard let id = response?.features[i].properties.id else { return }
                     guard let name = response?.features[i].properties.name else { return }
                     guard let phone = response?.features[i].properties.phone else { return }
                     guard let address = response?.features[i].properties.address else { return }
@@ -91,7 +112,8 @@ class MainVC: UIViewController {
                     
                     
                     if county == "臺中市"{
-                        self.maskInfo.append(MaskInfo(name: name,
+                        self.maskInfo.append(MaskInfo(id: id,
+                                                      name: name,
                                                       phone: phone,
                                                       address: address,
                                                       mask_adult: mask_adult,
@@ -104,6 +126,7 @@ class MainVC: UIViewController {
             }//如果資料庫第一次載入
             else {
                 for i in 0 ..< featureCount {
+                    guard let id = response?.features[i].properties.id else { return }
                     guard let name = response?.features[i].properties.name else { return }
                     guard let phone = response?.features[i].properties.phone else { return }
                     guard let address = response?.features[i].properties.address else { return }
@@ -116,7 +139,8 @@ class MainVC: UIViewController {
                     
                     
                     if county == "臺中市"{
-                        self.maskInfo.append(MaskInfo(name: name,
+                        self.maskInfo.append(MaskInfo(id: id,
+                                                      name: name,
                                                       phone: phone,
                                                       address: address,
                                                       mask_adult: mask_adult,
@@ -125,7 +149,8 @@ class MainVC: UIViewController {
                                                       town: town,
                                                       cunli: cunli))
                         
-                        let maskInfo = MaskInfo(name: name,
+                        let maskInfo = MaskInfo(id: id,
+                                                name: name,
                                                 phone: phone,
                                                 address: address,
                                                 mask_adult: mask_adult,
@@ -135,8 +160,7 @@ class MainVC: UIViewController {
                                                 cunli: cunli)
                         
                         //新增資料到資料庫
-                        LocalDatabase.shared.add(maskInfo: maskInfo)
-                        
+                        CoreDataManager.shared.addData(maskInfo: maskInfo)
                         
                     }
                 }
@@ -144,7 +168,6 @@ class MainVC: UIViewController {
             
             self.getTownName()
             DispatchQueue.main.async {
-                self.listTableView.reloadData()
                 self.apiActivityIndicator.stopAnimating()
                 self.indicatorView.removeFromSuperview()
                 self.view.isUserInteractionEnabled = true
@@ -170,12 +193,6 @@ class MainVC: UIViewController {
                 let resultStringForAuthor = str3?.substring(from: subIndex)
                 let stringRemoveAuthor = str3?.removeSubrange(subIndex..<endIndex!)
                 let resultStringForOneDaySentence = str3?.trimmingCharacters(in: .whitespacesAndNewlines)
-                print("oneDaySentence: \(oneDaySentence)")
-                print("str1: \(str1)")
-                print("str2: \(str2)")
-                print("str3: \(str3)")
-                print("resultString: \(resultStringForAuthor)")
-                print("Another result String: \(resultStringForOneDaySentence)")
                 DispatchQueue.main.async {
                     self.sentenceLabel.text = resultStringForOneDaySentence
                     self.authorLabel.text = resultStringForAuthor
@@ -212,24 +229,16 @@ class MainVC: UIViewController {
             return 0.0
         }
     }
-    //取得realm定義的objectID作為primaryKey
+    //取得maskAPI提供的id作為primaryKey
     func getCellPrimaryKey() {
-        let realm = try! Realm()
-        let id = realm.objects(MaskInfoDB.self)
-        //如不是選擇pickerview狀態下
-        if isSelectTownMode == false{
-            if id.count > 0 {
-                tableViewCellPrimaryKey = id[self.cellIndexPath]._id
+        let frc = fetchResultController.fetchedObjects?[self.cellIndexPath]
+            print("cellIndexPath in Getcell primary key: \(cellIndexPath)")
+            if !fetchResultController.fetchedObjects!.isEmpty {
+                tableViewCellPrimaryKey = (frc?.id)!
             }
             print(tableViewCellPrimaryKey)
-        } else {
-            let results = realm.objects(MaskInfoDB.self).filter("town == %@", selectedTown)
-            if results.count > 0 {
-                tableViewCellPrimaryKey = results[self.cellIndexPath]._id
-            }
-            print(tableViewCellPrimaryKey)
-        }
     }
+    
     //設置navigationBar
     func setNavigationBar(){
         let appearance = UINavigationBarAppearance()
@@ -288,114 +297,66 @@ class MainVC: UIViewController {
     
     //當toolbar按下complete 將篩選成指定區域的資料並更新tableview顯示
     @objc func selectTownArea() {
-        maskInfoDBNameArray = []
-        maskInfoDBTownArray = []
-        maskInfoDBAdultMaskNumberArray = []
-        maskInfoDBChildMaskNumberArray = []
-        isSelectTownMode = true
-        let realm = try! Realm()
-        let results = realm.objects(MaskInfoDB.self).filter("town == %@", selectedTown)
-        if results.count > 0{
-            for element in results {
-                maskInfoDBNameArray.append("\(element.name)")
-                maskInfoDBTownArray.append("\(element.town)")
-                maskInfoDBAdultMaskNumberArray.append("\(element.mask_adult)")
-                maskInfoDBChildMaskNumberArray.append("\(element.mask_child)")
-            }
-            listTableView.reloadData()
-            removePickView()
+        //修改fetchResultController篩選條件
+        fetchResultController.fetchRequest.predicate = NSPredicate(format: "town == %@", selectedTown)
+        do {
+            try fetchResultController.performFetch()
         }
-        
+        catch {
+            print("error: \(error)")
+        }
+        DispatchQueue.main.async {
+            self.townBtn.setTitle(self.selectedTown, for: .normal)
+            self.listTableView.reloadData()
+            self.removePickView()
+        }
     }
 
 }
 
 extension MainVC: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        
-        let realm = try! Realm()
-        let result = realm.objects(MaskInfoDB.self)
-        if result.count > 0 {
-            if !isSelectTownMode{
-                preIndexPath = result.count
-                return result.count
-            }
-            else {
-               let results = realm.objects(MaskInfoDB.self).filter("town == %@", selectedTown)
-               return results.count
-           }
-        }
-        return 0
+        let maskInfoData = fetchResultController.sections![section]
+        preIndexPath = maskInfoData.numberOfObjects
+            return maskInfoData.numberOfObjects
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: CustomTVC.cellIdentifier, for: indexPath) as! CustomTVC
-        let realm = try! Realm()
-        let result = realm.objects(MaskInfoDB.self)
+        let maskInfoData = fetchResultController.object(at: indexPath)
         
-        if result.count > 0 {
-            if !isSelectTownMode{
-                for element in result {
-                    maskInfoDBNameArray.append("\(element.name)")
-                    maskInfoDBTownArray.append("\(element.town)")
-                    maskInfoDBAdultMaskNumberArray.append("\(element.mask_adult)")
-                    maskInfoDBChildMaskNumberArray.append("\(element.mask_child)")
-                }
-                cell.nameLabel.text = "藥局: " + maskInfoDBNameArray[indexPath.row]
-                cell.townLabel.text = "地區: " + maskInfoDBTownArray[indexPath.row]
-                cell.adultMaskLabel.text = "成人口罩: " + maskInfoDBAdultMaskNumberArray[indexPath.row]
-                cell.childMaskLabel.text = "小孩口罩: " + maskInfoDBChildMaskNumberArray[indexPath.row]
-                return cell
-            } else {
-                cell.nameLabel.text = "藥局: " + maskInfoDBNameArray[indexPath.row]
-                cell.townLabel.text = "地區: " + maskInfoDBTownArray[indexPath.row]
-                cell.adultMaskLabel.text = "成人口罩: " + maskInfoDBAdultMaskNumberArray[indexPath.row]
-                cell.childMaskLabel.text = "小孩口罩: " + maskInfoDBChildMaskNumberArray[indexPath.row]
-                return cell
-            }
-            
-        }
+        cell.nameLabel.text = "藥局: " + (maskInfoData.name ?? "")
+        cell.townLabel.text = "地區: " + (maskInfoData.town ?? "")
+        cell.adultMaskLabel.text = "成人口罩: " + String(maskInfoData.mask_adult)
+        cell.childMaskLabel.text = "兒童口罩: " + String(maskInfoData.mask_child)
         return cell
     }
     
-    func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
-        return .delete
-    }
-    
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-
-            DispatchQueue.main.async {
-                let realm = try! Realm()
-                let result = realm.objects(MaskInfoDB.self)
-
-                    self.cellIndexPath = indexPath.row
-                    self.getCellPrimaryKey()
-                    let deleteCell = realm.objects(MaskInfoDB.self).filter("_id == %@", self.tableViewCellPrimaryKey).first
-                    try! realm.write{
-                        realm.delete(deleteCell!)
-                    }
-                    print("上次表格的行數： \(self.preIndexPath)  當前表格行數： \(result.count)")
-                //當資料被刪除時
-                if (self.preIndexPath - result.count == 1){
-                    print(indexPath)
-                    tableView.beginUpdates()
-                    tableView.deleteRows(at: [indexPath], with: .fade)
-                    tableView.endUpdates()
-                }
-                else if (self.preIndexPath - result.count == 0){
-                    print("列表已更新")
-                }
-                else {
-                    tableView.reloadData()
-                }
-                
-            }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let maskInfoData = fetchResultController.object(at: indexPath)
+        listTableView.deselectRow(at: indexPath, animated: true)
+        let alert = UIAlertController(title: "請問是否刪除該筆資料",
+                                      message: "",
+                                      preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "刪除", style: .destructive, handler: { _ in
+            let maskInfoData = self.fetchResultController.object(at: indexPath)
+            print(self.fetchResultController.fetchRequest.predicate)
+                            self.cellIndexPath = indexPath.row
+                            self.getCellPrimaryKey()
+            print("cell indexpath in editingStyle : %@",self.cellIndexPath)
+        print(maskInfoData)
+        print("get mask info data cell id : \(maskInfoData.id)")
+            print("get tableview Cell PrimaryKey : \(self.tableViewCellPrimaryKey)")
+            if maskInfoData.id == self.tableViewCellPrimaryKey {
+            CoreDataManager.shared.deleteData(maskInfoTable: maskInfoData)
         }
+            print("上次表格的行數： \(self.preIndexPath)  當前表格行數： \(self.fetchResultController.fetchedObjects?.count)")
+        }))
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: { _ in
+            return
+        }))
+        self.present(alert, animated: true, completion: nil)
     }
-    
-
-
 }
 
 extension MainVC: UIPickerViewDelegate, UIPickerViewDataSource {
@@ -419,5 +380,31 @@ extension MainVC: UIPickerViewDelegate, UIPickerViewDataSource {
             selectedTown = townListForPickerView[row]
             print (selectedTown)
         }
+    }
+}
+
+extension MainVC: NSFetchedResultsControllerDelegate {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        listTableView.beginUpdates()
+    }
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+        switch type {
+        case .move:
+            listTableView.deleteRows(at: [indexPath!], with: .fade)
+            listTableView.insertRows(at: [newIndexPath!], with: .fade)
+        case .insert:
+            print("這是新的indexpath : \(newIndexPath)")
+            listTableView.insertRows(at: [newIndexPath!], with: .fade)
+        case .delete:
+            print("這是舊的indexpath : \(indexPath)")
+            listTableView.deleteRows(at: [indexPath!], with: .fade)
+        case .update:
+            listTableView.reloadRows(at: [indexPath!], with: .fade)
+        default:
+            listTableView.reloadData()
+        }
+    }
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        listTableView.endUpdates()
     }
 }

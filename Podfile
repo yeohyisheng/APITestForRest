@@ -6,7 +6,6 @@ target 'APITestForRest' do
   use_frameworks!
 
   # Pods for APITestForRest
-pod 'RealmSwift'
 pod 'Kanna'
 pod 'Alamofire'
   target 'APITestForRestTests' do

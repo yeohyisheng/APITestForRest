@@ -7,6 +7,7 @@
 
 import Foundation
 struct MaskInfo {
+    var id: String
     var name: String
     var phone: String
     var address: String
