@@ -14,6 +14,7 @@ class MainVC: UIViewController {
     @IBOutlet weak var listTableView: UITableView!
     @IBOutlet weak var townPickerView: UIPickerView!
     @IBOutlet weak var indicatorView: UIView!
+    @IBOutlet weak var viewForTownLabel: UIView!
     @IBOutlet weak var apiActivityIndicator: UIActivityIndicatorView!
     @IBOutlet weak var townLabel: UILabel!
     @IBOutlet weak var sentenceLabel: UILabel!
@@ -56,7 +57,7 @@ class MainVC: UIViewController {
     }
     //設置viewController屬性
     func setupViewController(){
-        self.view.backgroundColor = .darkGray
+        self.view.backgroundColor = #colorLiteral(red: 0.9215685725, green: 0.9215685725, blue: 0.9215685725, alpha: 1)
     }
     
     ////設置navigationBarLeftItem屬性
@@ -80,7 +81,7 @@ class MainVC: UIViewController {
     func setNavigationBar(){
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = .darkGray
+        appearance.backgroundColor = #colorLiteral(red: 0.1961517334, green: 0.7123987079, blue: 0.6680575013, alpha: 1)
         self.navigationController?.navigationBar.tintColor = #colorLiteral(red: 0.9953911901, green: 0.9881951213, blue: 1, alpha: 1)
         appearance.titleTextAttributes = [NSAttributedString.Key.foregroundColor : #colorLiteral(red: 0.9953911901, green: 0.9881951213, blue: 1, alpha: 1)]
         self.navigationController?.navigationBar.standardAppearance = appearance
@@ -89,12 +90,20 @@ class MainVC: UIViewController {
     }
     //設置tableView屬性
     func setupTableView(){
-        listTableView.backgroundColor = .darkGray
+        listTableView.backgroundColor = #colorLiteral(red: 0.9215685725, green: 0.9215685725, blue: 0.9215685725, alpha: 1)
         listTableView.separatorStyle = .none
     }
-    //設置townLabel屬性
+    //設置Label屬性
     func setupLabel(){
-        townLabel.backgroundColor = .black
+        viewForTownLabel.backgroundColor = #colorLiteral(red: 0.9215685725, green: 0.9215685725, blue: 0.9215685725, alpha: 1)
+        viewForTownLabel.layer.borderColor = #colorLiteral(red: 0.1961517334, green: 0.7123987079, blue: 0.6680575013, alpha: 1)
+        viewForTownLabel.layer.borderWidth = 1
+        viewForTownLabel.layer.cornerRadius = 5
+        viewForTownLabel.layer.masksToBounds = true
+        townLabel.textColor = #colorLiteral(red: 0.3296368122, green: 0.7192444205, blue: 0.6623541713, alpha: 1)
+        sentenceLabel.textColor = #colorLiteral(red: 0.3296368122, green: 0.7192444205, blue: 0.6623541713, alpha: 1)
+        authorLabel.textColor = #colorLiteral(red: 0.3296368122, green: 0.7192444205, blue: 0.6623541713, alpha: 1)
+        
     }
     //delegate datasource
     func delegate(){
